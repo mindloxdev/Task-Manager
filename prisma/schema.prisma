@@ -1,0 +1,516 @@
+// Cadence — Team Task Management & Accountability System
+//
+// Portability note: this schema deliberately avoids provider-specific features
+// (no DB enums, no native Json columns, no array columns) so that switching
+// `provider` below from "sqlite" to "postgresql" and pointing DATABASE_URL at a
+// Postgres instance is a one-line change. Enum-like columns are plain strings
+// validated by Zod at every write boundary (see src/lib/enums.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// People & organisation
+// ---------------------------------------------------------------------------
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  name         String
+  jobTitle     String?
+  passwordHash String?
+  role         String  @default("EMPLOYEE") // OWNER | MANAGER | EMPLOYEE
+  status       String  @default("ACTIVE") // ACTIVE | INVITED | DEACTIVATED
+  timezone     String  @default("UTC")
+  avatarColor  String  @default("#0F766E")
+  weeklyHours  Int     @default(40)
+
+  // Bumping tokenVersion invalidates every session token issued to this user.
+  tokenVersion  Int       @default(0)
+  inviteToken   String?   @unique
+  invitedAt     DateTime?
+  lastLoginAt   DateTime?
+  deactivatedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships        TeamMembership[]
+  createdTeams       Team[]                  @relation("TeamCreatedBy")
+  createdTasks       Task[]                  @relation("TaskCreatedBy")
+  ownedTasks         Task[]                  @relation("TaskPrimaryOwner")
+  assignments        TaskAssignee[]
+  subtasksCompleted  Subtask[]               @relation("SubtaskCompletedBy")
+  progressUpdates    ProgressUpdate[]
+  comments           Comment[]
+  attachments        Attachment[]
+  reviewsSubmitted   TaskReview[]            @relation("ReviewSubmittedBy")
+  reviewsDecided     TaskReview[]            @relation("ReviewDecidedBy")
+  updateRequestsMade UpdateRequest[]         @relation("UpdateRequestedBy")
+  updateRequestsGot  UpdateRequest[]         @relation("UpdateRequestedOf")
+  extensionsAsked    ExtensionRequest[]      @relation("ExtensionRequestedBy")
+  extensionsDecided  ExtensionRequest[]      @relation("ExtensionDecidedBy")
+  deadlineChanges    DeadlineChange[]
+  notifications      Notification[]          @relation("NotificationRecipient")
+  notificationsSent  Notification[]          @relation("NotificationActor")
+  activity           ActivityLog[]
+  auditEntries       AuditLog[]
+  preferences        NotificationPreference?
+
+  @@index([role])
+  @@index([status])
+}
+
+model NotificationPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  inAppEnabled     Boolean @default(true)
+  emailEnabled     Boolean @default(false)
+  notifyAssignment Boolean @default(true)
+  notifyProgress   Boolean @default(true)
+  notifyBlocker    Boolean @default(true)
+  notifyReview     Boolean @default(true)
+  notifyDeadline   Boolean @default(true)
+  notifyComments   Boolean @default(true)
+
+  // Hours before a deadline at which reminders fire, as a comma-separated list.
+  reminderOffsets String @default("48,24,2")
+
+  updatedAt DateTime @updatedAt
+}
+
+model Team {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String?
+  color       String    @default("#0F766E")
+  archivedAt  DateTime?
+
+  createdById String?
+  createdBy   User?   @relation("TeamCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships TeamMembership[]
+  tasks       Task[]
+  projects    Project[]
+  activity    ActivityLog[]
+
+  @@index([archivedAt])
+}
+
+model TeamMembership {
+  id     String @id @default(cuid())
+  teamId String
+  userId String
+  role   String @default("MEMBER") // LEAD | MEMBER
+
+  createdAt DateTime @default(now())
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([teamId, userId])
+  @@index([userId])
+  @@index([teamId, role])
+}
+
+model Project {
+  id          String    @id @default(cuid())
+  name        String
+  key         String    @unique
+  description String?
+  color       String    @default("#4F46E5")
+  archivedAt  DateTime?
+
+  teamId String?
+  team   Team?   @relation(fields: [teamId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tasks Task[]
+
+  @@index([teamId])
+}
+
+// ---------------------------------------------------------------------------
+// Tasks
+// ---------------------------------------------------------------------------
+
+model Task {
+  id          String  @id @default(cuid())
+  code        String  @unique // human readable, e.g. CAD-128
+  title       String
+  description String?
+  instruction String?
+
+  priority       String @default("NORMAL") // LOW | NORMAL | HIGH | URGENT
+  status         String @default("DRAFT")
+  assignmentType String @default("INDIVIDUAL") // INDIVIDUAL | MULTIPLE | TEAM
+  completionRule String @default("ALL_REQUIRED") // ALL_REQUIRED | ANY_ONE | PRIMARY_ONLY
+  progressMode   String @default("MANUAL") // MANUAL | CHECKLIST
+  updateCadence  String @default("ON_STATUS_CHANGE") // NONE | DAILY | WEEKLY | ON_STATUS_CHANGE
+  recurrence     String @default("NONE") // NONE | DAILY | WEEKLY | MONTHLY
+
+  reviewRequired Boolean @default(true)
+  progress       Int     @default(0)
+  estimateHours  Float?
+  category       String?
+
+  startDate     DateTime?
+  dueAt         DateTime?
+  originalDueAt DateTime?
+
+  teamId    String?
+  team      Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  createdById    String
+  createdBy      User    @relation("TaskCreatedBy", fields: [createdById], references: [id])
+  primaryOwnerId String?
+  primaryOwner   User?   @relation("TaskPrimaryOwner", fields: [primaryOwnerId], references: [id], onDelete: SetNull)
+
+  // Lifecycle timestamps — recorded on first entry into each state.
+  assignedAt     DateTime?
+  acknowledgedAt DateTime?
+  startedAt      DateTime?
+  blockedAt      DateTime?
+  submittedAt    DateTime?
+  reviewedAt     DateTime?
+  completedAt    DateTime?
+  cancelledAt    DateTime?
+  archivedAt     DateTime?
+  lastProgressAt DateTime?
+
+  recurrenceParentId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  assignees       TaskAssignee[]
+  subtasks        Subtask[]
+  progressUpdates ProgressUpdate[]
+  comments        Comment[]
+  attachments     Attachment[]
+  reviews         TaskReview[]
+  updateRequests  UpdateRequest[]
+  extensions      ExtensionRequest[]
+  deadlineChanges DeadlineChange[]
+  notifications   Notification[]
+  activity        ActivityLog[]
+
+  @@index([status])
+  @@index([teamId, status])
+  @@index([projectId])
+  @@index([dueAt])
+  @@index([priority])
+  @@index([createdById])
+  @@index([archivedAt])
+}
+
+/// One row per accountable person on a task. A task is never duplicated to
+/// assign it to several people: this join model carries each assignee's own
+/// status and progress.
+model TaskAssignee {
+  id     String @id @default(cuid())
+  taskId String
+  userId String
+
+  isRequired Boolean @default(true)
+  isPrimary  Boolean @default(false)
+  status     String  @default("ASSIGNED") // ASSIGNED | ACKNOWLEDGED | IN_PROGRESS | BLOCKED | SUBMITTED | CHANGES_REQUESTED | COMPLETED
+  progress   Int     @default(0)
+
+  /// True when the assignee joined because the task was given to a whole team.
+  viaTeam Boolean @default(false)
+
+  acknowledgedAt DateTime?
+  startedAt      DateTime?
+  submittedAt    DateTime?
+  completedAt    DateTime?
+  lastUpdateAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@index([userId, status])
+  @@index([taskId, status])
+}
+
+model Subtask {
+  id       String  @id @default(cuid())
+  taskId   String
+  title    String
+  isDone   Boolean @default(false)
+  position Int     @default(0)
+
+  completedById String?
+  completedBy   User?     @relation("SubtaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  completedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, position])
+}
+
+model ProgressUpdate {
+  id     String @id @default(cuid())
+  taskId String
+  userId String
+
+  kind     String @default("UPDATE") // UPDATE | BLOCKER | UNBLOCKED | SUBMISSION | RESPONSE
+  progress Int
+
+  workCompleted      String?
+  workRemaining      String?
+  blockers           String?
+  helpNeeded         String?
+  expectedCompletion DateTime?
+  linkUrl            String?
+
+  /// Set when this update answers a manager's request for an update.
+  updateRequestId String? @unique
+
+  createdAt DateTime @default(now())
+
+  task          Task           @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  updateRequest UpdateRequest? @relation(fields: [updateRequestId], references: [id], onDelete: SetNull)
+
+  @@index([taskId, createdAt])
+  @@index([userId, createdAt])
+}
+
+model UpdateRequest {
+  id            String @id @default(cuid())
+  taskId        String
+  requestedById String
+  requestedOfId String
+
+  message String?
+  dueAt   DateTime?
+
+  respondedAt DateTime?
+  createdAt   DateTime  @default(now())
+
+  task        Task            @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  requestedBy User            @relation("UpdateRequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+  requestedOf User            @relation("UpdateRequestedOf", fields: [requestedOfId], references: [id], onDelete: Cascade)
+  response    ProgressUpdate?
+
+  @@index([requestedOfId, respondedAt])
+  @@index([taskId])
+}
+
+model Comment {
+  id       String  @id @default(cuid())
+  taskId   String
+  authorId String
+  body     String
+  parentId String?
+
+  editedAt  DateTime?
+  createdAt DateTime  @default(now())
+
+  task    Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author  User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentThread", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentThread")
+
+  @@index([taskId, createdAt])
+  @@index([parentId])
+}
+
+model Attachment {
+  id         String @id @default(cuid())
+  taskId     String
+  uploaderId String
+
+  kind      String  @default("FILE") // FILE | LINK
+  filename  String
+  mimeType  String?
+  sizeBytes Int?
+
+  /// Private storage key resolved server-side only. Never a public URL.
+  storageKey String?
+
+  /// Used when kind = LINK (a deliverable hosted elsewhere).
+  url   String?
+  label String?
+
+  createdAt DateTime @default(now())
+
+  task     Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploader User @relation(fields: [uploaderId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
+}
+
+model TaskReview {
+  id     String @id @default(cuid())
+  taskId String
+  round  Int    @default(1)
+
+  submittedById String
+  submittedBy   User   @relation("ReviewSubmittedBy", fields: [submittedById], references: [id], onDelete: Cascade)
+
+  summary     String?
+  decision    String  @default("PENDING") // PENDING | APPROVED | CHANGES_REQUESTED
+  feedback    String?
+  decidedById String?
+  decidedBy   User?   @relation("ReviewDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  submittedAt DateTime  @default(now())
+  decidedAt   DateTime?
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, round])
+  @@index([decision])
+}
+
+model ExtensionRequest {
+  id     String @id @default(cuid())
+  taskId String
+
+  requestedById String
+  requestedBy   User   @relation("ExtensionRequestedBy", fields: [requestedById], references: [id], onDelete: Cascade)
+
+  currentDueAt   DateTime?
+  requestedDueAt DateTime
+  reason         String
+
+  status       String    @default("PENDING") // PENDING | APPROVED | REJECTED
+  decidedById  String?
+  decidedBy    User?     @relation("ExtensionDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+  decisionNote String?
+  decidedAt    DateTime?
+
+  createdAt DateTime @default(now())
+
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId, status])
+  @@index([status])
+}
+
+/// Deadline history. The task keeps `originalDueAt`; every change is also
+/// recorded here with who changed it and why.
+model DeadlineChange {
+  id          String    @id @default(cuid())
+  taskId      String
+  fromDueAt   DateTime?
+  toDueAt     DateTime?
+  reason      String?
+  changedById String
+
+  createdAt DateTime @default(now())
+
+  task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  changedBy User @relation(fields: [changedById], references: [id], onDelete: Cascade)
+
+  @@index([taskId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// Notifications, activity, audit
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+
+  type  String
+  title String
+  body  String?
+
+  taskId String?
+  task   Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  actorId String?
+  actor   User?   @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  href String?
+
+  /// Stable key that makes recurring reminders idempotent — the same reminder
+  /// for the same task, user and window is never inserted twice.
+  dedupeKey String? @unique
+
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+}
+
+model ActivityLog {
+  id      String  @id @default(cuid())
+  taskId  String?
+  task    Task?   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  teamId  String?
+  team    Team?   @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  action  String
+  summary String
+
+  /// JSON-encoded detail payload, stored as text for provider portability.
+  meta String?
+
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([taskId, createdAt])
+  @@index([teamId, createdAt])
+}
+
+model AuditLog {
+  id      String  @id @default(cuid())
+  actorId String?
+  actor   User?   @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  action     String
+  entityType String
+  entityId   String
+  before     String?
+  after      String?
+  ip         String?
+
+  createdAt DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model Setting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+/// Monotonic counters (used for human-readable task codes).
+model Counter {
+  key   String @id
+  value Int    @default(0)
+}

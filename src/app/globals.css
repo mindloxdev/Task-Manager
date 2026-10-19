@@ -1,0 +1,628 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   MindLox design tokens
+
+   Lifted from the MindLox AI site (mindlox.ai): brand blue #2b6bff on a cool
+   near-white ground, with cyan #14b8dc and violet #7c5cff as the supporting
+   accents and a near-black navy #06091a for text. Every colour is defined
+   once on :root in the light palette and redefined for dark, so components
+   only ever reference semantic names — never a raw hex, never a `dark:`
+   variant.
+
+   Contrast: body and label text pairs are at or above 4.5:1 in both themes;
+   large text and non-text indicators are at or above 3:1. The brand blue is
+   set one step darker than the site's #2b6bff so the same token clears 4.5:1
+   both as a white-on-blue fill and as link text on the page ground.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* Surfaces and text — white product surfaces on the site's cool page ground */
+  --bg: #f6f8fc;
+  --surface: #ffffff;
+  --surface-2: #eef1f8;
+  --surface-3: #e3e8f3;
+  --fg: #06091a;
+  --fg-muted: #4a5470;
+  --fg-subtle: #68728c;
+  --border: #e4e8f0;
+  --border-strong: #ccd3e2;
+
+  /* Elevation — restrained, because the design is flat by intent */
+  --shadow-sm: 0 1px 2px rgba(6, 9, 26, 0.05);
+  --shadow-md: 0 2px 8px -2px rgba(6, 9, 26, 0.08), 0 1px 3px rgba(6, 9, 26, 0.04);
+  --shadow-lg: 0 12px 32px -8px rgba(6, 9, 26, 0.16), 0 2px 8px rgba(6, 9, 26, 0.06);
+
+  /* Brand and action */
+  --primary: #2663f5;
+  --primary-hover: #1d53d6;
+  --primary-fg: #ffffff;
+  --primary-soft: #e6edff;
+  --primary-soft-fg: #1a46b8;
+  --accent: #6341f0;
+  --accent-hover: #5132d6;
+  --accent-fg: #ffffff;
+  --accent-soft: #ece7ff;
+  --accent-soft-fg: #4a2bc9;
+  --ring: #2663f5;
+
+  /* Full-bleed brand panel (sign-in, invitation). Deliberately its own token:
+     a 100%-saturated panel that works in light mode is overwhelming in dark,
+     so both themes use the site's near-black navy with the blue as the rule. */
+  --brand-panel: #080d26;
+  --brand-panel-fg: #ffffff;
+  --brand-panel-muted: rgba(255, 255, 255, 0.85);
+  --brand-panel-line: #2b6bff;
+
+  /* Status */
+  --st-draft: #4a5470;
+  --st-draft-bg: #e9ecf4;
+  --st-assigned: #1d53d6;
+  --st-assigned-bg: #e2eaff;
+  --st-acknowledged: #3f46c8;
+  --st-acknowledged-bg: #e6e7fb;
+  --st-progress: #0d7490;
+  --st-progress-bg: #d9f1f8;
+  --st-blocked: #c0304f;
+  --st-blocked-bg: #fde3e8;
+  --st-review: #7a2fc9;
+  --st-review-bg: #f1e7fd;
+  --st-changes: #96590a;
+  --st-changes-bg: #fdf0d6;
+  --st-completed: #0f7a52;
+  --st-completed-bg: #d7f3e7;
+  --st-cancelled: #6b7490;
+  --st-cancelled-bg: #eceff5;
+
+  /* Health */
+  --h-track: #0f7a52;
+  --h-track-bg: #d7f3e7;
+  --h-risk: #96590a;
+  --h-risk-bg: #fdf0d6;
+  --h-overdue: #c0304f;
+  --h-overdue-bg: #fde3e8;
+
+  /* Priority */
+  --p-low: #6b7490;
+  --p-normal: #1d53d6;
+  --p-high: #b4530a;
+  --p-urgent: #c0304f;
+
+  /* Charts — the site's own accents, distinguishable in both themes and for
+     common colour blindness */
+  --chart-1: #2b6bff;
+  --chart-2: #14b8dc;
+  --chart-3: #7c5cff;
+  --chart-4: #10b981;
+  --chart-5: #f59e0b;
+  --chart-6: #f0466a;
+  --grid: #dde3ee;
+
+  /* Dense dashboard spacing scale */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+
+  --radius: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+/* System-preference dark, unless the viewer explicitly chose light */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+
+    /* Surfaces and text — the site's near-black navy (#06091a) as the ground,
+       with each step up the surface scale holding the same hue. */
+    --bg: #06091a;
+    --surface: #0d1228;
+    --surface-2: #141a36;
+    --surface-3: #1d2546;
+    --fg: #e8ecf8;
+    --fg-muted: #a9b2cd;
+    --fg-subtle: #8a93ab;
+    --border: #222a4a;
+    --border-strong: #36406b;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+    --shadow-md: 0 2px 8px -2px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 12px 32px -8px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.45);
+
+    /* Brand and action — the blue lifted for legibility on a dark ground */
+    --primary: #6b93ff;
+    --primary-hover: #8fadff;
+    --primary-fg: #04102e;
+    --primary-soft: #15214a;
+    --primary-soft-fg: #adc4ff;
+    --accent: #9d86ff;
+    --accent-hover: #b5a3ff;
+    --accent-fg: #15093a;
+    --accent-soft: #241a4d;
+    --accent-soft-fg: #c3b2ff;
+    --ring: #6b93ff;
+
+    --brand-panel: #080d26;
+    --brand-panel-fg: #e8ecf8;
+    --brand-panel-muted: rgba(232, 236, 248, 0.78);
+    --brand-panel-line: #6b93ff;
+
+    --st-draft: #aab3cc;
+    --st-draft-bg: #1b2240;
+    --st-assigned: #9dbaff;
+    --st-assigned-bg: #132046;
+    --st-acknowledged: #a8acf9;
+    --st-acknowledged-bg: #1b1c45;
+    --st-progress: #5fd8f2;
+    --st-progress-bg: #082c38;
+    --st-blocked: #ff9aae;
+    --st-blocked-bg: #3a1420;
+    --st-review: #c9a6fb;
+    --st-review-bg: #241046;
+    --st-changes: #fbc34f;
+    --st-changes-bg: #352506;
+    --st-completed: #6ee7b7;
+    --st-completed-bg: #07301f;
+    --st-cancelled: #94a0bd;
+    --st-cancelled-bg: #1b2240;
+
+    --h-track: #6ee7b7;
+    --h-track-bg: #07301f;
+    --h-risk: #fbc34f;
+    --h-risk-bg: #352506;
+    --h-overdue: #ff9aae;
+    --h-overdue-bg: #3a1420;
+
+    --p-low: #94a0bd;
+    --p-normal: #9dbaff;
+    --p-high: #fbc34f;
+    --p-urgent: #ff9aae;
+
+    --chart-1: #6b93ff;
+    --chart-2: #38d6f5;
+    --chart-3: #9d86ff;
+    --chart-4: #34d399;
+    --chart-5: #fbbf24;
+    --chart-6: #ff7f97;
+    --grid: #222a4a;
+  }
+}
+
+/* Explicit dark choice wins in both directions */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  /* Surfaces and text — the site's near-black navy (#06091a) as the ground,
+     with each step up the surface scale holding the same hue. */
+  --bg: #06091a;
+  --surface: #0d1228;
+  --surface-2: #141a36;
+  --surface-3: #1d2546;
+  --fg: #e8ecf8;
+  --fg-muted: #a9b2cd;
+  --fg-subtle: #8a93ab;
+  --border: #222a4a;
+  --border-strong: #36406b;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 2px 8px -2px rgba(0, 0, 0, 0.55), 0 1px 3px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 12px 32px -8px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.45);
+
+  /* Brand and action — the blue lifted for legibility on a dark ground */
+  --primary: #6b93ff;
+  --primary-hover: #8fadff;
+  --primary-fg: #04102e;
+  --primary-soft: #15214a;
+  --primary-soft-fg: #adc4ff;
+  --accent: #9d86ff;
+  --accent-hover: #b5a3ff;
+  --accent-fg: #15093a;
+  --accent-soft: #241a4d;
+  --accent-soft-fg: #c3b2ff;
+  --ring: #6b93ff;
+
+  --brand-panel: #080d26;
+  --brand-panel-fg: #e8ecf8;
+  --brand-panel-muted: rgba(232, 236, 248, 0.78);
+  --brand-panel-line: #6b93ff;
+
+  --st-draft: #aab3cc;
+  --st-draft-bg: #1b2240;
+  --st-assigned: #9dbaff;
+  --st-assigned-bg: #132046;
+  --st-acknowledged: #a8acf9;
+  --st-acknowledged-bg: #1b1c45;
+  --st-progress: #5fd8f2;
+  --st-progress-bg: #082c38;
+  --st-blocked: #ff9aae;
+  --st-blocked-bg: #3a1420;
+  --st-review: #c9a6fb;
+  --st-review-bg: #241046;
+  --st-changes: #fbc34f;
+  --st-changes-bg: #352506;
+  --st-completed: #6ee7b7;
+  --st-completed-bg: #07301f;
+  --st-cancelled: #94a0bd;
+  --st-cancelled-bg: #1b2240;
+
+  --h-track: #6ee7b7;
+  --h-track-bg: #07301f;
+  --h-risk: #fbc34f;
+  --h-risk-bg: #352506;
+  --h-overdue: #ff9aae;
+  --h-overdue-bg: #3a1420;
+
+  --p-low: #94a0bd;
+  --p-normal: #9dbaff;
+  --p-high: #fbc34f;
+  --p-urgent: #ff9aae;
+
+  --chart-1: #6b93ff;
+  --chart-2: #38d6f5;
+  --chart-3: #9d86ff;
+  --chart-4: #34d399;
+  --chart-5: #fbbf24;
+  --chart-6: #ff7f97;
+  --grid: #222a4a;
+}
+
+/* Expose the tokens to Tailwind utilities (bg-surface, text-fg-muted, …) */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-fg-subtle: var(--fg-subtle);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-fg: var(--primary-fg);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-fg: var(--primary-soft-fg);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-fg: var(--accent-fg);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-fg: var(--accent-soft-fg);
+  --color-ring: var(--ring);
+  --color-brand-panel: var(--brand-panel);
+  --color-brand-panel-fg: var(--brand-panel-fg);
+  --color-brand-panel-muted: var(--brand-panel-muted);
+  --color-brand-panel-line: var(--brand-panel-line);
+
+  --color-track: var(--h-track);
+  --color-track-bg: var(--h-track-bg);
+  --color-risk: var(--h-risk);
+  --color-risk-bg: var(--h-risk-bg);
+  --color-overdue: var(--h-overdue);
+  --color-overdue-bg: var(--h-overdue-bg);
+
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
+
+  --radius-token: var(--radius);
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-manrope), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  color: var(--fg);
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+/* Visible, generous focus ring everywhere — never removed */
+:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+::selection {
+  background: var(--primary-soft);
+  color: var(--primary-soft-fg);
+}
+
+::placeholder {
+  color: var(--fg-subtle);
+  opacity: 1;
+}
+
+button:not(:disabled),
+[role="button"]:not([aria-disabled="true"]),
+a[href],
+label[for],
+summary,
+select:not(:disabled) {
+  cursor: pointer;
+}
+
+/* Thin, theme-aware scrollbars for the dense panels */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* --------------------------------------------------------------------------
+   Utilities
+   -------------------------------------------------------------------------- */
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Wide content scrolls inside its own box; the page never scrolls sideways */
+.scroll-x {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  line-height: 1.5;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+/* Status, health and priority chips. Each pairs a tint with a dot or icon, so
+   colour is never the only carrier of meaning. */
+.chip-DRAFT { background: var(--st-draft-bg); color: var(--st-draft); }
+.chip-ASSIGNED { background: var(--st-assigned-bg); color: var(--st-assigned); }
+.chip-ACKNOWLEDGED { background: var(--st-acknowledged-bg); color: var(--st-acknowledged); }
+.chip-IN_PROGRESS { background: var(--st-progress-bg); color: var(--st-progress); }
+.chip-BLOCKED { background: var(--st-blocked-bg); color: var(--st-blocked); }
+.chip-SUBMITTED_FOR_REVIEW { background: var(--st-review-bg); color: var(--st-review); }
+.chip-SUBMITTED { background: var(--st-review-bg); color: var(--st-review); }
+.chip-CHANGES_REQUESTED { background: var(--st-changes-bg); color: var(--st-changes); }
+.chip-COMPLETED { background: var(--st-completed-bg); color: var(--st-completed); }
+.chip-CANCELLED { background: var(--st-cancelled-bg); color: var(--st-cancelled); }
+
+.chip-ON_TRACK { background: var(--h-track-bg); color: var(--h-track); }
+.chip-AT_RISK { background: var(--h-risk-bg); color: var(--h-risk); }
+.chip-OVERDUE { background: var(--h-overdue-bg); color: var(--h-overdue); }
+.chip-NOT_STARTED { background: var(--st-draft-bg); color: var(--st-draft); }
+
+.chip-LOW { background: var(--st-draft-bg); color: var(--p-low); }
+.chip-NORMAL { background: var(--st-assigned-bg); color: var(--p-normal); }
+.chip-HIGH { background: var(--accent-soft); color: var(--accent-soft-fg); }
+.chip-URGENT { background: var(--st-blocked-bg); color: var(--p-urgent); }
+
+.bar-DRAFT, .bar-NOT_STARTED { background: var(--st-draft); }
+.bar-ASSIGNED { background: var(--st-assigned); }
+.bar-ACKNOWLEDGED { background: var(--st-acknowledged); }
+.bar-IN_PROGRESS, .bar-ON_TRACK { background: var(--st-progress); }
+.bar-BLOCKED { background: var(--st-blocked); }
+.bar-SUBMITTED_FOR_REVIEW { background: var(--st-review); }
+.bar-CHANGES_REQUESTED, .bar-AT_RISK { background: var(--st-changes); }
+.bar-COMPLETED { background: var(--st-completed); }
+.bar-CANCELLED { background: var(--st-cancelled); }
+.bar-OVERDUE { background: var(--h-overdue); }
+
+/* --------------------------------------------------------------------------
+   Motion — short, purposeful, and skipped entirely on request
+   -------------------------------------------------------------------------- */
+
+/* Shared easings and durations. Short and consistent: motion here is there to
+   explain where something came from, never to make the user wait. */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 260ms;
+}
+
+@keyframes cadence-rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cadence-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes cadence-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@keyframes cadence-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes cadence-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.rise {
+  animation: cadence-rise 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.fade {
+  animation: cadence-fade 160ms ease-out both;
+}
+
+.skeleton {
+  background-image: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 37%, var(--surface-2) 63%);
+  background-size: 200% 100%;
+  animation: cadence-shimmer 1.4s ease-in-out infinite;
+  border-radius: var(--radius);
+}
+
+/* Entrance for a group of cards or rows. The stagger is capped at twelve
+   children so a long list never animates for longer than a third of a second —
+   anything below the fold simply appears. */
+.enter > * {
+  animation: cadence-enter var(--dur-slow) var(--ease-out) both;
+}
+
+.enter > *:nth-child(1) { animation-delay: 0ms; }
+.enter > *:nth-child(2) { animation-delay: 25ms; }
+.enter > *:nth-child(3) { animation-delay: 50ms; }
+.enter > *:nth-child(4) { animation-delay: 75ms; }
+.enter > *:nth-child(5) { animation-delay: 100ms; }
+.enter > *:nth-child(6) { animation-delay: 125ms; }
+.enter > *:nth-child(7) { animation-delay: 150ms; }
+.enter > *:nth-child(8) { animation-delay: 175ms; }
+.enter > *:nth-child(n + 9) { animation-delay: 200ms; }
+
+/* A card that responds to the pointer: 1px of lift, nothing theatrical. */
+.lift {
+  transition:
+    transform var(--dur-base) var(--ease-out),
+    box-shadow var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+  will-change: transform;
+}
+
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.lift:active {
+  transform: translateY(0);
+  transition-duration: var(--dur-fast);
+}
+
+/* Progress bars draw themselves in from the left on first paint. */
+.bar-fill {
+  transform-origin: left center;
+  animation: cadence-grow var(--dur-slow) var(--ease-out) both;
+}
+
+/* Table rows tint rather than jump. */
+.row-hover {
+  transition: background-color var(--dur-fast) var(--ease-in-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Hover lift and entrance offsets are removed outright, not just sped up. */
+  .lift:hover,
+  .lift:active {
+    transform: none;
+  }
+}
+
+/* Recharts tooltips and axes inherit our tokens rather than their defaults */
+.recharts-surface:focus,
+.recharts-wrapper:focus {
+  outline: none;
+}
+
+.recharts-default-tooltip {
+  background: var(--surface) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius) !important;
+  color: var(--fg) !important;
+  font-size: 0.75rem !important;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: #ffffff;
+    color: #000000;
+  }
+}
