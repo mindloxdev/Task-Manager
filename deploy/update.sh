@@ -1,16 +1,20 @@
 #!/usr/bin/env bash
-# Put the latest code online: pull, install, migrate, rebuild, restart.
+# The one command to put your changes online:
 #
-#   deploy/update.sh            pull from GitHub, then deploy
-#   deploy/update.sh --no-pull  deploy the code as it is in this folder
+#   deploy/update.sh                       save, sync with GitHub, deploy
+#   deploy/update.sh -m "Fix the calendar" same, with your own commit message
+#   deploy/update.sh --no-git              deploy the folder as it is, no git
 #
-# Asks for sudo itself (restarting the service needs root). If the working
-# tree has uncommitted changes it does not pull, and deploys them as they are.
+# 1. Any changes in this folder are committed (git add -A; .gitignore keeps
+#    .env and uploads out), changes on GitHub are pulled in, and the result is
+#    pushed to GitHub.
+# 2. Dependencies are reinstalled if package-lock.json changed, migrations run.
+# 3. The app is rebuilt and restarted. It is offline for about a minute; if the
+#    build or the health check fails, the previous build is put back, so a
+#    broken change never leaves the site down.
 #
-# The app is offline while it rebuilds (about a minute). If the build or the
-# health check fails, the previous build is put back and started again, so a
-# broken change never leaves the site down.
-#
+# Asks for sudo itself (restarting the service needs root); git runs as the
+# folder's owner, with their GitHub credentials.
 # First install (database, nginx, certificate) is deploy/install.sh, not this.
 set -euo pipefail
 
@@ -24,11 +28,13 @@ fail() { printf '\n\033[31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 [[ $EUID -eq 0 ]] || exec sudo "$0" "$@"
 
-PULL=1
-for arg in "$@"; do
-  case "$arg" in
-    --no-pull) PULL="" ;;
-    *) fail "unknown option: $arg (only --no-pull is supported)" ;;
+GIT=1
+MESSAGE=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -m|--message) [[ -n "${2:-}" ]] || fail "-m needs a message, e.g. -m \"Fix the calendar\""; MESSAGE="$2"; shift 2 ;;
+    --no-git|--no-pull) GIT=""; shift ;;
+    *) fail "unknown option: $1 (use -m \"message\" or --no-git)" ;;
   esac
 done
 
@@ -61,14 +67,36 @@ cd "$APP_DIR"
 OLD_REV="$(as_app git rev-parse HEAD)"
 
 # --- 1. code ------------------------------------------------------------------
-say "1/4  Code"
-if [[ -z "$PULL" ]]; then
-  echo "Not pulling (--no-pull); deploying the folder as it is"
-elif [[ -n "$(as_app git status --porcelain --untracked-files=no)" ]]; then
-  echo "This folder has uncommitted changes, so not pulling; deploying them as they are:"
-  as_app git status --short --untracked-files=no
+say "1/4  Save and sync with GitHub"
+PUSH_FAILED=""
+BRANCH="$(as_app git rev-parse --abbrev-ref HEAD)"
+if [[ -z "$GIT" ]]; then
+  echo "Skipping git (--no-git); deploying the folder as it is"
 else
-  as_app git pull --ff-only || fail "git pull failed (see above). Nothing was changed on the server."
+  if [[ -n "$(as_app git status --porcelain)" ]]; then
+    echo "Committing your changes:"
+    as_app git status --short
+    as_app git add -A
+    as_app git commit -q -m "${MESSAGE:-Update from server, $(date '+%Y-%m-%d %H:%M')}"
+    echo "Committed: $(as_app git log --oneline -1)"
+  else
+    echo "No local changes to commit"
+  fi
+
+  # Bring in anything pushed from elsewhere, with local commits on top.
+  if ! as_app git pull --rebase origin "$BRANCH"; then
+    as_app git rebase --abort 2>/dev/null || true
+    fail "could not pull from GitHub (see above): either no connection, or your changes clash with changes there.
+Your changes are committed here; nothing was deployed. For a clash, run: git pull --rebase origin $BRANCH
+then fix the files it names, and run this script again."
+  fi
+
+  if as_app git push origin "$BRANCH"; then
+    echo "GitHub is up to date"
+  else
+    PUSH_FAILED=1
+    echo "WARNING: could not push to GitHub (see above). Deploying anyway; run this script again later to push." >&2
+  fi
 fi
 NEW_REV="$(as_app git rev-parse HEAD)"
 if [[ "$OLD_REV" != "$NEW_REV" ]]; then
@@ -133,3 +161,4 @@ systemctl start task-manager-reminders.timer
 rm -rf .next.prev
 
 say "Online: https://${DOMAIN:-127.0.0.1:$PORT} ($(as_app git log --oneline -1))"
+[[ -z "$PUSH_FAILED" ]] || echo "WARNING: this version is online but not on GitHub yet; run deploy/update.sh again to push it." >&2

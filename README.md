@@ -140,12 +140,14 @@ On the first run `OWNER_EMAIL` creates the owner account and prints a one-time
 password. Everyone else is invited from the Employees page. The demo seed is
 never run on the server.
 
-To put new changes online: `deploy/update.sh`. It pulls from GitHub (or, if
-this folder has uncommitted changes, deploys them as they are), reinstalls
+To put new changes online, run `deploy/update.sh` — the only command needed
+after any change. It commits whatever changed in this folder, pulls in anything
+pushed to GitHub from elsewhere, pushes the result to GitHub, reinstalls
 dependencies when the lockfile changed, applies migrations, rebuilds and
 restarts. The app is offline for about a minute while it rebuilds; if the
 build or the health check fails, the previous build is put back online.
-`--no-pull` deploys the folder without pulling.
+`-m "message"` sets the commit message; `--no-git` deploys the folder without
+touching git.
 
 ---
 
