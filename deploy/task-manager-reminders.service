@@ -1,0 +1,17 @@
+# Template. deploy/install.sh fills in @APP_DIR@ and @APP_USER@ and installs the
+# result as /etc/systemd/system/task-manager-reminders.service.
+# Started hourly by task-manager-reminders.timer.
+[Unit]
+Description=MindLox Task Manager reminder sweep
+After=task-manager.service
+Requires=task-manager.service
+
+[Service]
+Type=oneshot
+User=@APP_USER@
+Group=@APP_USER@
+EnvironmentFile=@APP_DIR@/.env
+ExecStart=/bin/bash @APP_DIR@/deploy/run-reminders.sh
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full

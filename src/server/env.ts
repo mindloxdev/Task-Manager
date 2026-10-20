@@ -29,7 +29,7 @@ function int(name: string, fallback: number): number {
 
 export const env = {
   get databaseUrl() {
-    return required("DATABASE_URL", "file:./dev.db");
+    return required("DATABASE_URL");
   },
   get authSecret() {
     const secret = required("AUTH_SECRET");

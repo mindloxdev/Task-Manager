@@ -284,7 +284,7 @@ export default async function DashboardPage() {
             description="Either someone asked for an update and got no reply, or the task's check-in schedule has passed."
           />
           <div className="scroll-x">
-            <table className="w-full border-collapse text-left">
+            <table className="stack-table w-full border-collapse text-left">
               <caption className="sr-only">People who have not reported progress</caption>
               <thead>
                 <tr className="border-b border-border">
@@ -308,7 +308,7 @@ export default async function DashboardPage() {
                         <span className="text-xs font-medium text-fg">{row.name}</span>
                       </span>
                     </td>
-                    <td className="px-3 py-2">
+                    <td data-label="Task" className="px-3 py-2">
                       <Link
                         href={`/tasks/${row.taskId}`}
                         className="text-xs text-fg-muted hover:text-primary hover:underline"
@@ -316,10 +316,10 @@ export default async function DashboardPage() {
                         <span className="tnum font-mono">{row.taskCode}</span> — {row.taskTitle}
                       </Link>
                     </td>
-                    <td className="px-3 py-2 text-xs text-fg-muted">
+                    <td data-label="Last update" className="px-3 py-2 text-xs text-fg-muted">
                       {row.lastUpdateAt ? formatRelative(row.lastUpdateAt) : "Never"}
                     </td>
-                    <td className="px-3 py-2 text-xs">
+                    <td data-label="Requested" className="px-3 py-2 text-xs">
                       {row.requestedAt ? (
                         <span className="chip chip-CHANGES_REQUESTED">
                           <Radio className="size-3" aria-hidden="true" />

@@ -1183,6 +1183,8 @@ describe("14. Progress and analytics calculations are correct", () => {
 
     const byText = await listTasks(co.owner, taskFilterSchema.parse({ q: "billing" }));
     expect(byText.total).toBe(1);
+    // Search ignores case, as people type it.
+    expect((await listTasks(co.owner, taskFilterSchema.parse({ q: "BILLING" }))).total).toBe(1);
 
     const byStatus = await listTasks(co.owner, taskFilterSchema.parse({ status: "BLOCKED" }));
     expect(byStatus.items.map((t) => t.id)).toEqual([blocked.id]);

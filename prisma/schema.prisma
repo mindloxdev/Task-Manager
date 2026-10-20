@@ -1,17 +1,15 @@
 // Cadence — Team Task Management & Accountability System
 //
-// Portability note: this schema deliberately avoids provider-specific features
-// (no DB enums, no native Json columns, no array columns) so that switching
-// `provider` below from "sqlite" to "postgresql" and pointing DATABASE_URL at a
-// Postgres instance is a one-line change. Enum-like columns are plain strings
-// validated by Zod at every write boundary (see src/lib/enums.ts).
+// Runs on PostgreSQL. The schema avoids provider-specific features (no DB
+// enums, no native Json columns, no array columns): enum-like columns are plain
+// strings validated by Zod at every write boundary (see src/lib/enums.ts).
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 

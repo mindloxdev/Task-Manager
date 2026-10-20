@@ -1045,8 +1045,9 @@ export function buildTaskWhere(user: SessionUser, filter: TaskFilter): Prisma.Ta
   if (filter.q) {
     and.push({
       OR: [
-        { title: { contains: filter.q } },
-        { description: { contains: filter.q } },
+        // Postgres compares text case-sensitively; search should not.
+        { title: { contains: filter.q, mode: "insensitive" } },
+        { description: { contains: filter.q, mode: "insensitive" } },
         { code: { contains: filter.q.toUpperCase() } },
       ],
     });

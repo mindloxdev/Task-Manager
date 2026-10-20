@@ -1,8 +1,10 @@
 /**
  * Per-file test environment. Runs before any test module is imported, so the
- * Prisma client picks up the test database rather than the development one.
+ * Prisma client picks up the test database rather than the application's.
  */
-process.env.DATABASE_URL = "file:./test.db";
+import { testDatabaseUrl } from "./test-database-url";
+
+process.env.DATABASE_URL = testDatabaseUrl();
 process.env.AUTH_SECRET = "test-secret-at-least-thirty-two-characters-long";
 process.env.SESSION_TTL_HOURS = "12";
 process.env.ATTACHMENT_DIR = "./storage/test-attachments";

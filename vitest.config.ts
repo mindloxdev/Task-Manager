@@ -2,8 +2,8 @@ import path from "node:path";
 import { defineConfig } from "vitest/config";
 
 /**
- * Tests run against a real SQLite database (prisma/test.db), created from the
- * same schema the app uses, so the queries, constraints and transactions under
+ * Tests run against a real Postgres database (TEST_DATABASE_URL, from
+ * .env.test), rebuilt from the same schema the app uses, so the queries, constraints and transactions under
  * test are the real ones rather than mocks.
  */
 export default defineConfig({
@@ -22,7 +22,7 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     globalSetup: ["./tests/global-setup.ts"],
     setupFiles: ["./tests/setup.ts"],
-    // One SQLite file, so test files must not write to it concurrently.
+    // One shared database, so test files must not write to it concurrently.
     fileParallelism: false,
     sequence: { concurrent: false },
     testTimeout: 30_000,

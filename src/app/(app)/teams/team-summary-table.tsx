@@ -21,7 +21,7 @@ export function TeamSummaryTable({ teams }: { teams: TeamSummary[] }) {
   return (
     <div>
       <div className="scroll-x">
-        <table className="w-full border-collapse text-left">
+        <table className="stack-table w-full border-collapse text-left">
           <caption className="sr-only">Teams with their active, completed and overdue tasks</caption>
           <thead>
             <tr className="border-b border-border">
@@ -57,29 +57,29 @@ export function TeamSummaryTable({ teams }: { teams: TeamSummary[] }) {
                     </span>
                   </Link>
                 </td>
-                <td className="px-3 py-2.5">
+                <td data-label="Leads" className="px-3 py-2.5">
                   {team.leads.length > 0 ? (
                     <AvatarStack people={team.leads} max={3} size="xs" />
                   ) : (
                     <span className="text-[11px] text-fg-subtle">No lead</span>
                   )}
                 </td>
-                <td className="tnum px-3 py-2.5 text-right text-xs text-fg-muted">{team.memberCount}</td>
-                <td className="tnum px-3 py-2.5 text-right text-xs font-semibold text-fg">{team.activeTasks}</td>
-                <td className="tnum px-3 py-2.5 text-right text-xs text-fg-muted">{team.completedTasks}</td>
-                <td className="tnum px-3 py-2.5 text-right text-xs">
+                <td data-label="People" className="tnum px-3 py-2.5 text-right text-xs text-fg-muted">{team.memberCount}</td>
+                <td data-label="Active" className="tnum px-3 py-2.5 text-right text-xs font-semibold text-fg">{team.activeTasks}</td>
+                <td data-label="Completed" className="tnum px-3 py-2.5 text-right text-xs text-fg-muted">{team.completedTasks}</td>
+                <td data-label="Overdue" className="tnum px-3 py-2.5 text-right text-xs">
                   <span className={team.overdueTasks > 0 ? "font-bold text-overdue" : "text-fg-muted"}>
                     {team.overdueTasks}
                   </span>
                 </td>
-                <td className="tnum px-3 py-2.5 text-right text-xs">
+                <td data-label="Blocked" className="tnum px-3 py-2.5 text-right text-xs">
                   <span className={team.blockedTasks > 0 ? "font-bold text-overdue" : "text-fg-muted"}>
                     {team.blockedTasks}
                   </span>
                 </td>
-                <td className="tnum px-3 py-2.5 text-right text-xs text-fg-muted">{team.awaitingReview}</td>
-                <td className="px-3 py-2.5">
-                  <div className="flex items-center justify-end gap-2">
+                <td data-label="In review" className="tnum px-3 py-2.5 text-right text-xs text-fg-muted">{team.awaitingReview}</td>
+                <td data-label="Completion" className="px-3 py-2.5">
+                  <div className="flex items-center justify-end gap-2 max-md:justify-start">
                     <div className="w-20">
                       <ProgressBar
                         value={team.completionRate}

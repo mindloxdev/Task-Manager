@@ -33,7 +33,10 @@ if not exist ".env" (
   )
   echo [setup] Creating .env from .env.example
   copy /y ".env.example" ".env" >nul
+  echo [warn]  Set DATABASE_URL to your PostgreSQL database in .env, then run this again.
   echo [warn]  Set a real AUTH_SECRET in .env before using this for real work.
+  pause
+  exit /b 1
 )
 
 REM --- Dependencies on first run ----------------------------------------
@@ -45,14 +48,15 @@ if not exist "node_modules" (
   echo [ok]    Dependencies installed
 )
 
-REM --- Database on first run --------------------------------------------
-if not exist "prisma\dev.db" (
-  echo [setup] No database yet - creating, migrating and seeding it...
-  call npm run setup
-  if errorlevel 1 goto :failed_db
-) else (
-  echo [ok]    Database ready
-)
+REM --- Database: PostgreSQL at DATABASE_URL in .env -----------------------
+REM Applying migrations is safe on every start; it does nothing when the
+REM database is current. For demo data, run once:  npm run db:seed
+echo [setup] Applying database migrations...
+call npx prisma generate >nul
+if errorlevel 1 goto :failed_db
+call npx prisma migrate deploy
+if errorlevel 1 goto :failed_db
+echo [ok]    Database ready
 
 REM --- Is something already holding port 3000? -------------------------
 REM If so, Next.js falls back to the next free port, so don't open 3000.
@@ -97,6 +101,7 @@ exit /b 1
 :failed_db
 echo.
 echo [ERROR] Database setup failed - scroll up for the reason.
-echo         You can retry it by hand with:  npm run setup
+echo         Check that PostgreSQL is running and DATABASE_URL in .env is right,
+echo         then retry by hand with:  npm run setup
 pause
 exit /b 1

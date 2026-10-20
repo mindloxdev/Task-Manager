@@ -403,10 +403,68 @@ select:not(:disabled) {
   border-width: 0;
 }
 
-/* Wide content scrolls inside its own box; the page never scrolls sideways */
+/* Wide content scrolls inside its own box; the page never scrolls sideways.
+   `relative` makes the box the containing block for absolutely positioned
+   descendants (sr-only labels in table cells), so it clips them too — otherwise
+   they escape and widen the page, which phones answer by zooming out. */
 .scroll-x {
+  position: relative;
+  max-width: 100%;
   overflow-x: auto;
   overscroll-behavior-x: contain;
+}
+
+/* Below tablet width a `.stack-table` becomes one card per row: the header row
+   is hidden (still read by screen readers) and each cell carrying a
+   `data-label` shows that column name beside its value. A cell without one —
+   usually the first, naming the row — spans the full width as the card title. */
+@media (width < 48rem) {
+  .stack-table,
+  .stack-table tbody,
+  .stack-table tr,
+  .stack-table td {
+    display: block;
+    width: 100%;
+  }
+  .stack-table thead {
+    display: block;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+  .stack-table tr {
+    padding: 0.625rem 0.25rem;
+  }
+  .stack-table td {
+    padding: 0.2rem 0.5rem !important;
+    max-width: none !important;
+    text-align: left !important;
+    white-space: normal !important;
+  }
+  .stack-table td[data-label] {
+    display: grid;
+    grid-template-columns: 7.5rem minmax(0, 1fr);
+    gap: 0.5rem;
+    align-items: baseline;
+  }
+  .stack-table td[data-label]::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--fg-subtle);
+  }
+  .stack-table td[data-label] > * {
+    justify-self: start;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .stack-table td:not([data-label]) {
+    padding-bottom: 0.4rem !important;
+  }
 }
 
 .tnum {
@@ -414,6 +472,9 @@ select:not(:disabled) {
 }
 
 .card {
+  /* Grid and flex children default to min-width: auto and grow to their
+     content; a card must shrink to its column instead. */
+  min-width: 0;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);

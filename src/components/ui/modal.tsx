@@ -31,6 +31,13 @@ export function Modal({
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
+  // Callers pass a fresh onClose on every render (an inline arrow). Reading it
+  // through a ref keeps the effect below tied to `open` alone; otherwise every
+  // keystroke in the dialog re-ran it and yanked focus back to the first button.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
   const titleId = useId();
   const descriptionId = useId();
 
@@ -47,14 +54,16 @@ export function Modal({
     if (!open) return;
     previouslyFocused.current = document.activeElement as HTMLElement | null;
     const timer = window.setTimeout(() => {
+      // Start in the first field, not on the close button.
       const candidates = focusables();
-      (candidates[0] ?? panelRef.current)?.focus();
+      const field = candidates.find((element) => element.matches("input, select, textarea"));
+      (field ?? candidates[0] ?? panelRef.current)?.focus();
     }, 20);
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         event.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -81,7 +90,7 @@ export function Modal({
       document.body.style.overflow = overflow;
       previouslyFocused.current?.focus();
     };
-  }, [open, onClose, focusables]);
+  }, [open, focusables]);
 
   if (!open) return null;
 

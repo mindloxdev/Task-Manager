@@ -113,15 +113,18 @@ export default async function SettingsPage() {
                 {settings.emailConfigured ? (
                   <p className="flex items-start gap-2 rounded-md border border-track/40 bg-track-bg p-3 text-xs text-fg-muted">
                     <Mail className="mt-0.5 size-3.5 shrink-0 text-track" aria-hidden="true" />
-                    A mail provider is configured. People who enable email will receive it.
+                    <span className="min-w-0">A mail provider is configured. People who enable email will receive it.</span>
                   </p>
                 ) : (
                   <p className="flex items-start gap-2 rounded-md border border-border bg-surface-2 p-3 text-xs text-fg-muted">
                     <Mail className="mt-0.5 size-3.5 shrink-0 text-fg-subtle" aria-hidden="true" />
-                    No mail provider configured, so <strong className="font-semibold text-fg">no email is sent</strong>.
-                    In-app notifications still work. Set <code className="font-mono">EMAIL_PROVIDER</code>,{" "}
-                    <code className="font-mono">EMAIL_API_KEY</code> and <code className="font-mono">EMAIL_FROM</code> to
-                    enable it.
+                    {/* One flex item, so the sentence wraps as text instead of as separate pieces. */}
+                    <span className="min-w-0">
+                      No mail provider configured, so <strong className="font-semibold text-fg">no email is sent</strong>.
+                      In-app notifications still work. Set <code className="font-mono">EMAIL_PROVIDER</code>,{" "}
+                      <code className="font-mono">EMAIL_API_KEY</code> and <code className="font-mono">EMAIL_FROM</code> to
+                      enable it.
+                    </span>
                   </p>
                 )}
               </div>
@@ -139,7 +142,7 @@ export default async function SettingsPage() {
               <EmptyState compact icon={<History className="size-5" aria-hidden="true" />} title="Nothing audited yet" />
             ) : (
               <div className="scroll-x">
-                <table className="w-full border-collapse text-left">
+                <table className="stack-table w-full border-collapse text-left">
                   <caption className="sr-only">Audit history of sensitive actions</caption>
                   <thead>
                     <tr className="border-b border-border">
@@ -157,20 +160,20 @@ export default async function SettingsPage() {
                   <tbody>
                     {audit.map((entry) => (
                       <tr key={entry.id} className="row-hover border-b border-border last:border-0 hover:bg-surface-2">
-                        <td className="whitespace-nowrap px-3 py-2 text-[11px] text-fg-muted">
+                        <td data-label="When" className="whitespace-nowrap px-3 py-2 text-[11px] text-fg-muted">
                           {formatDateTime(entry.createdAt, user.timezone)}
                         </td>
-                        <td className="px-3 py-2 text-[11px] text-fg">{entry.actor?.name ?? "System"}</td>
-                        <td className="px-3 py-2">
+                        <td data-label="Who" className="px-3 py-2 text-[11px] text-fg">{entry.actor?.name ?? "System"}</td>
+                        <td data-label="Action" className="px-3 py-2">
                           <span className="chip bg-surface-2 text-fg-muted">{entry.action.toLowerCase().replace(/_/g, " ")}</span>
                         </td>
-                        <td className="px-3 py-2 text-[11px] text-fg-muted">
+                        <td data-label="Record" className="px-3 py-2 text-[11px] text-fg-muted">
                           {entry.entityType}
                           <span className="tnum ml-1 font-mono text-[10px] text-fg-subtle">
                             {entry.entityId.slice(0, 8)}
                           </span>
                         </td>
-                        <td className="max-w-[22rem] px-3 py-2">
+                        <td data-label="Detail" className="max-w-[22rem] px-3 py-2">
                           <p className="truncate text-[10px] text-fg-subtle" title={entry.after ?? entry.before ?? ""}>
                             {entry.after ?? entry.before ?? "—"}
                           </p>

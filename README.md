@@ -13,14 +13,17 @@ calculated.
 
 ## Quick start
 
+Needs Node 20+ and PostgreSQL.
+
 ```bash
 npm install
-cp .env.example .env          # then edit AUTH_SECRET (see Environment below)
+cp .env.example .env          # then edit DATABASE_URL and AUTH_SECRET (see Environment below)
 npm run setup                 # generate client, run migrations, seed demo data
 npm run dev                   # http://localhost:3000
 ```
 
 `npm run setup` is `prisma generate` + `prisma migrate deploy` + `npm run db:seed`.
+To put it on a server, see *Deployment* below.
 
 ### Demo accounts
 
@@ -52,7 +55,8 @@ company, a manager gets the teams they lead, an employee gets their own work.
 | `npm test` | Vitest suite (133 tests) |
 | `npm run db:migrate` | Create and apply a migration |
 | `npm run db:deploy` | Apply existing migrations (deployment) |
-| `npm run db:seed` | Reseed demo data (clears existing rows) |
+| `npm run db:seed` | Reseed demo data (clears existing rows; refuses if real accounts exist) |
+| `npm run db:create-owner` | Create the first owner account on an empty database (`OWNER_EMAIL`, `OWNER_NAME`) |
 | `npm run db:reset` | Drop, re-migrate and reseed |
 
 ---
@@ -63,7 +67,7 @@ Copy `.env.example` to `.env`. Only the first two matter to get running.
 
 | Variable | Required | Default | Notes |
 | --- | --- | --- | --- |
-| `DATABASE_URL` | Yes | `file:./dev.db` | SQLite in development. See *Database* below. |
+| `DATABASE_URL` | Yes | — | PostgreSQL connection URL. See *Database* below. |
 | `AUTH_SECRET` | Yes | — | Signs session cookies. **Must be 32+ characters in production** (the app refuses to start otherwise). Generate with `openssl rand -base64 32`. |
 | `SESSION_TTL_HOURS` | No | `12` | How long a session lasts. |
 | `CRON_SECRET` | No | — | Bearer token for the reminder endpoint. Without it, only a signed-in owner can run the sweep. |
@@ -73,6 +77,8 @@ Copy `.env.example` to `.env`. Only the first two matter to get running.
 | `EMAIL_PROVIDER` | No | — | Set to `resend` to enable email. |
 | `EMAIL_API_KEY` | No | — | Required if `EMAIL_PROVIDER` is set. |
 | `EMAIL_FROM` | No | — | Required if `EMAIL_PROVIDER` is set. |
+| `DOMAIN` | Deploy only | — | Public hostname nginx serves the app at. |
+| `PORT` | Deploy only | — | Local port the service listens on (127.0.0.1 only). |
 
 ### Email is off until you configure it
 
@@ -103,21 +109,39 @@ HTTP request will do.
 
 ## Database
 
-Development and tests run on SQLite so the project is clone-and-run with no
-services to install. The schema deliberately avoids provider-specific features —
-no database enums, no native JSON columns, no array columns — so moving to
-PostgreSQL is a one-line change:
+The app runs on PostgreSQL. The schema avoids provider-specific features — no
+database enums, no native JSON columns, no array columns. Enum-like columns are
+plain strings validated by Zod at every write boundary (`src/lib/enums.ts`).
+Text search ignores case.
 
-```prisma
-datasource db {
-  provider = "postgresql"   // was "sqlite"
-  url      = env("DATABASE_URL")
-}
+---
+
+## Deployment
+
+`deploy/` installs the app on an Ubuntu server that already runs nginx,
+PostgreSQL and certbot, the same way as the other apps on this machine:
+
+```bash
+sudo OWNER_EMAIL=you@example.com OWNER_NAME="Your Name" deploy/install.sh
 ```
 
-Then point `DATABASE_URL` at your instance and run `npm run db:migrate`.
-Enum-like columns are plain strings validated by Zod at every write boundary
-(`src/lib/enums.ts`), which is what makes the switch safe.
+| Piece | What it is |
+| --- | --- |
+| Database | `task_manager` (and `task_manager_test` for `npm test`), own role, password generated into `.env` |
+| `task-manager.service` | One Next.js process on `127.0.0.1:$PORT` — the frontend and the API (`/api/*`, server actions) together |
+| `task-manager-reminders.timer` | Runs the reminder sweep hourly with `CRON_SECRET` |
+| nginx | `https://$DOMAIN`, Let's Encrypt certificate, http → https, sign-in throttled per address |
+
+The script generates `AUTH_SECRET`, `CRON_SECRET` and the database password,
+builds, migrates, starts and health-checks the app, then checks DNS before it
+asks Let's Encrypt for a certificate. If the name does not point at the server
+yet, it prints the DNS record to add and stops; run it again once DNS is live.
+On the first run `OWNER_EMAIL` creates the owner account and prints a one-time
+password. Everyone else is invited from the Employees page. The demo seed is
+never run on the server.
+
+To update: `git pull && sudo deploy/install.sh` (the app is stopped while it
+rebuilds, about a minute).
 
 ---
 
@@ -222,8 +246,11 @@ it is never the authorisation decision.
 npm test
 ```
 
-133 tests against a real SQLite database built from the live schema — no mocked
-database, so constraints, transactions and rollups are the real ones.
+133 tests against a real PostgreSQL database built from the live schema — no
+mocked database, so constraints, transactions and rollups are the real ones.
+The suite reads `TEST_DATABASE_URL` from `.env.test` (on the server,
+`deploy/setup-database.sh` writes it) and **deletes everything in that
+database**, so it refuses to run against the `DATABASE_URL` in `.env`.
 
 - `tests/workflows.test.ts` — the fourteen workflows from the brief end to end,
   plus the invariants that matter: one task record per assignment, shared tasks

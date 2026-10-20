@@ -106,7 +106,7 @@ export function ReviewQueue({ reviews, extensions }: { reviews: ReviewRow[]; ext
             {reviews.map((row) => (
               <li key={row.id} className="rounded-md border border-border bg-surface-2/60 p-2.5">
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 basis-60">
                     <Link
                       href={`/tasks/${row.taskId}`}
                       className="text-xs font-semibold text-fg hover:text-primary hover:underline"
@@ -160,7 +160,7 @@ export function ReviewQueue({ reviews, extensions }: { reviews: ReviewRow[]; ext
             {extensions.map((row) => (
               <li key={row.id} className="rounded-md border border-risk/40 bg-risk-bg/50 p-2.5">
                 <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div className="min-w-0 flex-1">
+                  <div className="min-w-0 flex-1 basis-60">
                     <Link
                       href={`/tasks/${row.task.id}`}
                       className="text-xs font-semibold text-fg hover:text-primary hover:underline"

@@ -137,7 +137,20 @@ export default async function CalendarPage({
         </div>
 
         {view === "month" ? (
-          <MonthGrid anchor={anchor} byDay={byDay} />
+          <>
+            {/* Seven columns do not fit a phone; there the month reads as a list. */}
+            <div className="max-md:hidden">
+              <MonthGrid anchor={anchor} byDay={byDay} />
+            </div>
+            <div className="md:hidden">
+              <DayList
+                from={new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1))}
+                to={new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 1) - 1)}
+                byDay={byDay}
+                userTimezone={user.timezone}
+              />
+            </div>
+          </>
         ) : (
           <DayList from={from} to={to} byDay={byDay} userTimezone={user.timezone} />
         )}

@@ -169,7 +169,7 @@ export function AppShell({
           <div className="ml-auto flex items-center gap-1.5">
             {canAssign ? (
               <>
-                <ButtonLink href="/tasks/new" variant="primary" size="sm" className="hidden sm:inline-flex">
+                <ButtonLink href="/tasks/new" variant="primary" size="sm" className="max-sm:hidden">
                   <Plus className="size-3.5" aria-hidden="true" />
                   New task
                 </ButtonLink>
@@ -238,7 +238,7 @@ function QuickSearch() {
   return (
     <form
       role="search"
-      className="max-w-sm flex-1"
+      className="min-w-0 max-w-sm flex-1"
       onSubmit={(event) => {
         event.preventDefault();
         const query = value.trim();

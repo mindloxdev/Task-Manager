@@ -122,7 +122,7 @@ export function EmployeeTable({
         />
       ) : (
         <div className="scroll-x">
-          <table className="w-full border-collapse text-left">
+          <table className="stack-table w-full border-collapse text-left">
             <caption className="sr-only">People, their workload and their recent reporting</caption>
             <thead>
               <tr className="border-b border-border">
@@ -182,7 +182,7 @@ export function EmployeeTable({
                     </Link>
                   </td>
                   {!compact ? (
-                    <td className="px-3 py-2.5">
+                    <td data-label="Teams" className="px-3 py-2.5">
                       <span className="flex flex-wrap gap-1">
                         {row.teams.length === 0 ? (
                           <span className="text-[11px] text-fg-subtle">No team</span>
@@ -202,20 +202,20 @@ export function EmployeeTable({
                       </span>
                     </td>
                   ) : null}
-                  <td className="tnum px-3 py-2.5 text-right text-xs font-semibold text-fg">{row.activeTasks}</td>
-                  <td className="tnum px-3 py-2.5 text-right text-xs text-fg-muted">{row.completedTasks}</td>
-                  <td className="tnum px-3 py-2.5 text-right text-xs">
+                  <td data-label="Active" className="tnum px-3 py-2.5 text-right text-xs font-semibold text-fg">{row.activeTasks}</td>
+                  <td data-label="Done" className="tnum px-3 py-2.5 text-right text-xs text-fg-muted">{row.completedTasks}</td>
+                  <td data-label="Overdue" className="tnum px-3 py-2.5 text-right text-xs">
                     <span className={row.overdueTasks > 0 ? "font-bold text-overdue" : "text-fg-muted"}>
                       {row.overdueTasks}
                     </span>
                   </td>
-                  <td className="tnum px-3 py-2.5 text-right text-xs">
+                  <td data-label="Owes update" className="tnum px-3 py-2.5 text-right text-xs">
                     <span className={row.pendingUpdateRequests > 0 ? "font-bold text-risk" : "text-fg-muted"}>
                       {row.pendingUpdateRequests}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5">
-                    <div className="flex items-center justify-end gap-2">
+                  <td data-label="Workload" className="px-3 py-2.5">
+                    <div className="flex items-center justify-end gap-2 max-md:justify-start">
                       <div className="w-16">
                         <ProgressBar
                           value={(row.workloadWeighted / maxLoad) * 100}
@@ -228,11 +228,11 @@ export function EmployeeTable({
                     </div>
                   </td>
                   {!compact ? (
-                    <td className="tnum px-3 py-2.5 text-right text-xs text-fg-muted">
+                    <td data-label="On time" className="tnum px-3 py-2.5 text-right text-xs text-fg-muted">
                       {row.completedTasks > 0 ? `${row.onTimeRate}%` : "—"}
                     </td>
                   ) : null}
-                  <td className="px-3 py-2.5">
+                  <td data-label="Latest update" className="px-3 py-2.5">
                     {row.latestUpdate ? (
                       <div className="min-w-0 max-w-[16rem]">
                         <p className="truncate text-[11px] text-fg-muted">

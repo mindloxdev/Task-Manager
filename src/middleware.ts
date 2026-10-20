@@ -19,6 +19,19 @@ function isPublic(pathname: string): boolean {
   return PUBLIC_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
 }
 
+/**
+ * Redirect to a path on the host the browser actually used. Behind a reverse
+ * proxy, `request.url` carries the address Next.js listens on (e.g.
+ * 127.0.0.1:4020), so the public host and scheme come from the headers the
+ * proxy sets (nginx overwrites both; the app itself listens on localhost only).
+ */
+function redirectTo(request: NextRequest, path: string): NextResponse {
+  const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || request.nextUrl.host;
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const proto = forwardedProto === "https" || forwardedProto === "http" ? forwardedProto : request.nextUrl.protocol.slice(0, -1);
+  return NextResponse.redirect(new URL(path, `${proto}://${host}`));
+}
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(SESSION_COOKIE)?.value;
@@ -39,7 +52,7 @@ export async function middleware(request: NextRequest) {
   if (isPublic(pathname)) {
     // Someone already signed in has no reason to see the login form.
     if (valid && pathname === "/login") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
+      return redirectTo(request, "/dashboard");
     }
     return NextResponse.next();
   }
@@ -51,9 +64,8 @@ export async function middleware(request: NextRequest) {
         { status: 401 },
       );
     }
-    const loginUrl = new URL("/login", request.url);
-    if (pathname !== "/") loginUrl.searchParams.set("next", pathname);
-    const response = NextResponse.redirect(loginUrl);
+    const query = pathname === "/" ? "" : `?${new URLSearchParams({ next: pathname })}`;
+    const response = redirectTo(request, `/login${query}`);
     if (token) response.cookies.set(SESSION_COOKIE, "", { path: "/", maxAge: 0 });
     return response;
   }

@@ -1,0 +1,32 @@
+# Template. deploy/install.sh fills in @APP_DIR@, @APP_USER@, @NODE_BIN@ and
+# @PORT@ and installs the result as /etc/systemd/system/task-manager.service.
+#
+# One process serves both halves of the app: Next.js renders the frontend and
+# answers the backend (/api routes and server actions).
+[Unit]
+Description=MindLox Task Manager (Next.js frontend + API, behind nginx at @DOMAIN@)
+After=network-online.target postgresql.service
+Wants=network-online.target
+Requires=postgresql.service
+StartLimitIntervalSec=60
+StartLimitBurst=10
+
+[Service]
+Type=exec
+User=@APP_USER@
+Group=@APP_USER@
+WorkingDirectory=@APP_DIR@
+EnvironmentFile=@APP_DIR@/.env
+Environment=NODE_ENV=production
+Environment=NEXT_TELEMETRY_DISABLED=1
+# Localhost only; nginx is the sole client.
+ExecStart=@NODE_BIN@ @APP_DIR@/node_modules/next/dist/bin/next start -H 127.0.0.1 -p @PORT@
+Restart=always
+RestartSec=3
+TimeoutStopSec=15
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+
+[Install]
+WantedBy=multi-user.target

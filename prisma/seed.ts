@@ -8,8 +8,12 @@
  * Run with `npm run db:seed`. It clears the existing rows first, so never point
  * it at a database you care about.
  */
+import { existsSync } from "node:fs";
+
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+
+if (!process.env.DATABASE_URL && existsSync(".env")) process.loadEnvFile(".env");
 
 const prisma = new PrismaClient();
 
@@ -520,6 +524,15 @@ const COMMENTS = [
 ];
 
 async function main() {
+  // The seed deletes every row first. Refuse when the database holds anyone
+  // the seed did not create — that is real data, not a demo.
+  const realPeople = await prisma.user.count({ where: { NOT: { email: { endsWith: "@cadence.test" } } } });
+  if (realPeople > 0) {
+    throw new Error(
+      `Refusing to seed: this database has ${realPeople} account(s) the seed did not create, and seeding deletes everything.`,
+    );
+  }
+
   console.log("Clearing existing data…");
   await clear();
 

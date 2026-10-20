@@ -726,7 +726,8 @@ export function TaskForm({
 
       {/* ---------------------------------------------------------------- */}
       <div className="sticky bottom-0 -mx-3 flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface/95 px-3 py-3 backdrop-blur sm:-mx-5 sm:px-5">
-        <Button type="button" variant="ghost" onClick={() => router.back()} disabled={pending}>
+        {/* Phones have their own back button; dropping Cancel there keeps both actions on one row. */}
+        <Button type="button" variant="ghost" onClick={() => router.back()} disabled={pending} className="max-sm:hidden">
           Cancel
         </Button>
         <Button type="button" variant="secondary" onClick={() => submit(true)} loading={pending}>
