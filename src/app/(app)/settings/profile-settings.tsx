@@ -221,7 +221,7 @@ export function ProfileSettingsForm({
               variant="primary"
               onClick={changePassword}
               loading={pending}
-              disabled={!currentPassword || newPassword.length < 10}
+              disabled={!currentPassword || newPassword.length < 6}
             >
               Change password
             </Button>
@@ -243,7 +243,7 @@ export function ProfileSettingsForm({
             label="New password"
             htmlFor="new-password"
             required
-            hint="10+ characters, with a letter and a number."
+            hint="6+ characters, with a letter and a number."
             error={passwordErrors.newPassword}
           >
             <TextInput

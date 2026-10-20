@@ -63,7 +63,7 @@ export function AcceptInviteForm({ token, defaultName }: { token: string; defaul
         label="Choose a password"
         htmlFor="password"
         required
-        hint="At least 10 characters, including a letter and a number."
+        hint="At least 6 characters, including a letter and a number."
         error={fieldErrors.password}
       >
         <TextInput

@@ -82,7 +82,7 @@ export const loginSchema = z.object({
 
 export const passwordSchema = z
   .string()
-  .min(10, "Use at least 10 characters.")
+  .min(6, "Use at least 6 characters.")
   .max(200, "That password is too long.")
   .refine((value) => /[a-zA-Z]/.test(value) && /[0-9]/.test(value), "Include at least one letter and one number.");
 

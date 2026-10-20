@@ -54,9 +54,9 @@ describe("password handling", () => {
 
   it("refuses a password that is too short or has no digit", async () => {
     const { passwordSchema } = await import("@/lib/validation");
-    expect(passwordSchema.safeParse("short1").success).toBe(false);
+    expect(passwordSchema.safeParse("shrt1").success).toBe(false);
     expect(passwordSchema.safeParse("alllettersonly").success).toBe(false);
-    expect(passwordSchema.safeParse("goodenough1").success).toBe(true);
+    expect(passwordSchema.safeParse("abcde1").success).toBe(true);
   });
 });
 
