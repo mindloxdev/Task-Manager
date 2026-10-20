@@ -222,5 +222,5 @@ cat <<MSG
 Service:   systemctl status task-manager
 Logs:      journalctl -u task-manager -f
 Reminders: systemctl list-timers task-manager-reminders.timer
-Update:    git pull && sudo $0
+Update:    $(dirname "$0")/update.sh
 MSG

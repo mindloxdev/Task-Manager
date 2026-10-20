@@ -140,8 +140,12 @@ On the first run `OWNER_EMAIL` creates the owner account and prints a one-time
 password. Everyone else is invited from the Employees page. The demo seed is
 never run on the server.
 
-To update: `git pull && sudo deploy/install.sh` (the app is stopped while it
-rebuilds, about a minute).
+To put new changes online: `deploy/update.sh`. It pulls from GitHub (or, if
+this folder has uncommitted changes, deploys them as they are), reinstalls
+dependencies when the lockfile changed, applies migrations, rebuilds and
+restarts. The app is offline for about a minute while it rebuilds; if the
+build or the health check fails, the previous build is put back online.
+`--no-pull` deploys the folder without pulling.
 
 ---
 
